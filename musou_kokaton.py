@@ -267,7 +267,7 @@ class EMP:
         # ---画面フラッシュ---
         flash = pg.Surface((WIDTH, HEIGHT)) 
         flash.set_alpha(120) #半透明
-        flash.fill((255,255,0)) #フラッシュカラー
+        flash.fill((255,255,0)) #フラッシュカラー 
         screen.blit(flash,(0,0))
 
         pg.display.update() #画面更新
