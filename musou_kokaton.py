@@ -106,7 +106,7 @@ class Bird(pg.sprite.Sprite):
             if self.hyper_life <= 0:
                 self.state = "normal"
                 self.hyper_life = 0
-                self.image=pg.taransform.rotozoom(self.image, 0, 0.9)
+                self.image=pg.transform.rotozoom(self.image, 0, 0.9)
             self.image=pg.transform.laplacian(self.image)
         screen.blit(self.image, self.rect)
 
@@ -251,6 +251,30 @@ class Score:
         screen.blit(self.image, self.rect)
 
 
+class Life:
+    """
+    こうかとん残機数に関するクラス
+    初期残機数は3
+    爆弾に当たるたびに残機数が1減る
+    """
+    def __init__(self, num):
+        self.num = num
+
+        #ハートの描画
+        self.image = pg.Surface((40, 40), pg.SRCALPHA)
+        
+        points = [ (16*math.sin(t/100)**3 +20, -(13*math.cos(t/100)-5*math.cos(2*t/100)-2*math.cos(3*t/100)-math.cos(4*t/100)) +20) for t in range(0, 628) ]
+
+        pg.draw.polygon(self.image, (255, 0, 0), points)
+
+    def update(self, screen):
+            for i in range(self.num):
+                x = screen.get_width() - 50 - i * 45
+                y = screen.get_height() - 50
+
+                screen.blit(self.image, (x, y)) 
+
+
 def main():
     pg.display.set_caption("真！こうかとん無双")
     screen = pg.display.set_mode((WIDTH, HEIGHT))
@@ -262,6 +286,8 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+
+    life = Life(3)
 
     tmr = 0
     clock = pg.time.Clock()
@@ -296,17 +322,29 @@ def main():
             score.value += 1  # 1点アップ
 
         for bomb in pg.sprite.spritecollide(bird, bombs, True):  # こうかとんと衝突した爆弾リスト
+            
             if bird.state == "hyper":
                 exps.add(Explosion(bomb, 50))  # 爆発エフェクト
                 score.value += 1  # 1点アップ
                 score.update(screen)
                 continue
-            if bird.state != "hyper":
+
+            life.num -= 1 #残機減少
+            
+            if life.num <= 0:
                 bird.change_img(8, screen)  # こうかとん悲しみエフェクト
                 score.update(screen)
-            pg.display.update()
-            time.sleep(2)
-            return
+                pg.display.update()
+                time.sleep(2)
+                return
+            
+            # if bird.state != "hyper":
+            #     bird.change_img(8, screen)  # こうかとん悲しみエフェクト
+            #     score.update(screen)
+            # pg.display.update()
+            # time.sleep(2)
+            # return
+            
 
         bird.update(key_lst, screen)
         beams.update()
@@ -318,6 +356,7 @@ def main():
         exps.update()
         exps.draw(screen)
         score.update(screen)
+        life.update(screen)
         pg.display.update()
         tmr += 1
         clock.tick(50)
