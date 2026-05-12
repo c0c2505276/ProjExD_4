@@ -250,6 +250,24 @@ class Score:
         self.image = self.font.render(f"Score: {self.value}", 0, self.color)
         screen.blit(self.image, self.rect)
 
+class Gravity(pg.sprite.Sprite):
+    """
+    重力に関するクラス
+    スコアが200点以上のとき，重力を発動できる
+    """
+    def __init__(self, life):
+        super().__init__()
+        self.image = pg.Surface((WIDTH, HEIGHT))
+        pg.draw.rect(self.image, (0, 0, 0), self.image.get_rect(), width=0)
+        self.image.set_alpha(100)
+        self.image.fill((0, 0, 0))
+        self.rect = self.image.get_rect()
+        self.life = life  # 重力の持続時間
+
+    def update(self):
+        self.life -= 1
+        if self.life < 0:
+            self.kill()
 
 class Life:
     """
@@ -286,6 +304,7 @@ def main():
     beams = pg.sprite.Group()
     exps = pg.sprite.Group()
     emys = pg.sprite.Group()
+    gravity = pg.sprite.Group()
 
     life = Life(3)
 
@@ -303,6 +322,11 @@ def main():
                 bird.state = "hyper"
                 bird.hyper_life = 500
                 score.value-=100
+            if event.type == pg.KEYDOWN and event.key == pg.K_RETURN:
+                if score.value >= 200:  # スコアが200点以上のとき，重力を発動
+                    gravity.add(Gravity(400))  # 重力エフェクト
+                    score.value -= 200  # 重力発動に必要なスコアを減算
+        screen.blit(bg_img, [0, 0])
 
         if tmr%200 == 0:  # 200フレームに1回，敵機を出現させる
             emys.add(Enemy())
@@ -317,7 +341,16 @@ def main():
             score.value += 10  # 10点アップ
             bird.change_img(6, screen)  # こうかとん喜びエフェクト
 
+        for emy in pg.sprite.groupcollide(emys, gravity, True, False).keys():  # 重力と衝突した敵機リスト
+            exps.add(Explosion(emy, 100))  # 爆発エフェクト
+            score.value += 10  # 10点アップ
+            bird.change_img(6, screen)  # こうかとん喜びエフェクト
+
         for bomb in pg.sprite.groupcollide(bombs, beams, True, True).keys():  # ビームと衝突した爆弾リスト
+            exps.add(Explosion(bomb, 50))  # 爆発エフェクト
+            score.value += 1  # 1点アップ
+
+        for bomb in pg.sprite.groupcollide(bombs, gravity, True, False).keys():  # 重力と衝突した爆弾リスト
             exps.add(Explosion(bomb, 50))  # 爆発エフェクト
             score.value += 1  # 1点アップ
 
@@ -353,6 +386,8 @@ def main():
         emys.draw(screen)
         bombs.update()
         bombs.draw(screen)
+        gravity.update()
+        gravity.draw(screen)
         exps.update()
         exps.draw(screen)
         score.update(screen)
